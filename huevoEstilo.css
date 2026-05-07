@@ -1,0 +1,101 @@
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #fef6e4, #aee1f9);
+  margin: 0;
+  padding: 0;
+  color: #333;
+}
+
+header {
+  background: url("Portada.png") center/cover no-repeat;
+  text-align: center;
+  padding: 60px 20px;
+  color: #fff;
+  font-size: 2.8em;
+  font-weight: bold;
+  text-shadow: 2px 2px 6px rgba(0,0,0,0.6);
+  border-bottom: 5px solid #f4a261;
+}
+
+main, section {
+  max-width: 900px;
+  margin: 30px auto;
+  background-color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+  padding: 30px;
+}
+
+h2 {
+  color: #e76f51;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #f4a261;
+  padding-bottom: 5px;
+}
+
+label {
+  display: block;
+  margin-top: 12px;
+  font-weight: 600;
+  color: #5a3e1b;
+}
+
+select, input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  border: 2px solid #f4a261;
+  border-radius: 8px;
+  background-color: #fff;
+  transition: 0.3s;
+}
+
+select:focus, input:focus {
+  border-color: #e76f51;
+  outline: none;
+  box-shadow: 0 0 6px rgba(231,111,81,0.5);
+}
+
+button {
+  display: inline-block;
+  margin: 20px 10px 0 0;
+  background-color: #f4a261;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  font-size: 1em;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background-color: #e76f51;
+  transform: scale(1.05);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+th, td {
+  border: 1px solid #f4a261;
+  padding: 12px;
+  text-align: center;
+}
+
+th {
+  background-color: #f4a261;
+  color: #fff;
+  font-weight: bold;
+}
+
+tfoot td {
+  font-weight: bold;
+  background-color: #fef6e4;
+  color: #5a3e1b;
+}
