@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Almacén Huevos FLOR - Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="huevoEstilo.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  
+  <header>🥚🥚🥚 HUEVOS FLOR 🥚🥚🥚</header>
+
+  <main>
+    <section id="botonesRapidos">
+      <h2>Venta Rápida</h2>
+      <div class="controles-rapidos">
+        <div class="grupo-categorias" id="selectorTamano">
+          <button type="button" class="btn-cat active" onclick="seleccionarTamano('super', this)">Super</button>
+          <button type="button" class="btn-cat" onclick="seleccionarTamano('mediano', this)">Mediano</button>
+          <button type="button" class="btn-cat" onclick="seleccionarTamano('grande', this)">Grande</button>
+          <button type="button" class="btn-cat" onclick="seleccionarTamano('extra', this)">Extra</button>
+        </div>
+
+        <div class="grupo-btns">
+          <button onclick="ventaRapida(1)">+1</button>
+          <button onclick="ventaRapida(3)">+3</button>
+          <button onclick="ventaRapida(5)">+5</button>
+          <button onclick="ventaRapida(7)">+7</button>
+          <button onclick="ventaRapida(10)">+10</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stockSection">
+        <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
+      <button id="mostrarConfig">⚙️ Configuración</button>
+      <button id="btnCierreCaja" style="background-color: #2a9d8f;">🔒 Cerrar Caja</button>
+    </div>
+
+    <section id="configuracion" style="display: none;">
+      <h2>Configuración de Precios y Stock</h2>
+      <form id="configMenu">
+        <div class="config-grid">
+          <label>Precio Super: <input type="number" id="precioSuper"></label>
+          <label>Stock Super: <input type="number" id="inputStSuper"></label>
+          <hr>
+          <label>Precio Mediano: <input type="number" id="precioMediano"></label>
+          <label>Stock Mediano: <input type="number" id="inputStMediano"></label>
+          <hr>
+          <label>Precio Grande: <input type="number" id="precioGrande"></label>
+          <label>Stock Grande: <input type="number" id="inputStGrande"></label>
+          <hr>
+          <label>Precio Extra: <input type="number" id="precioExtra"></label>
+          <label>Stock Extra: <input type="number" id="inputStExtra"></label>
+        </div>
+        <button type="submit" style="margin-top: 15px; width: 100%;">Guardar Cambios</button>
+      </form>
+    </section>
+      <h2>Inventario de Cartones</h2>
+      <div class="grid-stock">
+        <div class="card-stock">Super: <span id="st-super">0</span></div>
+        <div class="card-stock">Mediano: <span id="st-mediano">0</span></div>
+        <div class="card-stock">Grande: <span id="st-grande">0</span></div>
+        <div class="card-stock">Extra: <span id="st-extra">0</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Desempeño de Ventas (Hoy)</h2>
+      <canvas id="graficoVentas"></canvas>
+    </section>
+
+    <section>
+      <h2>Registro Detallado del Día</h2>
+      <table id="tablaVentas">
+        <thead>
+          <tr>
+            <th>Tamaño</th>
+            <th>Cantidad</th>
+            <th>Subtotal</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+          <tr>
+            <td>Total Unid:</td>
+            <td id="total">0</td>
+            <td>Caja Total:</td>
+            <td id="totalVentas">$0</td>
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+
+    <section>
+      <h2>Historial Reciente (Últimas 10)</h2>
+      <table id="historialVentas">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tamaño</th>
+            <th>Cant.</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <button id="descargarExcel" style="margin-top: 15px; background-color: #264653;">📊 Exportar Todo a Excel</button>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="Huevo.js"></script>
+</body>
+</html>

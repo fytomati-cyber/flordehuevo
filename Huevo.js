@@ -1,180 +1,206 @@
-// --- Variables principales ---
-const form = document.getElementById('ventaForm');
-const tablaVentasBody = document.getElementById('tablaVentas').querySelector('tbody');
-const totalCartones = document.getElementById('total');
-const totalVentas = document.getElementById('totalVentas');
-const configForm = document.getElementById('configMenu');
-const filtroSelect = document.getElementById('filtroTamano');
+// ==========================================
+// 1. ESTADO INICIAL Y CONFIGURACIÓN
+// ==========================================
+let precios = JSON.parse(localStorage.getItem("precios")) || { super: 3500, mediano: 4500, grande: 5500, extra: 6500 };
+let stock = JSON.parse(localStorage.getItem("stock")) || { super: 100, mediano: 100, grande: 100, extra: 100 };
+let ventas = JSON.parse(localStorage.getItem("ventas")) || []; // Ventas del día
+let ventasDiarias = JSON.parse(localStorage.getItem("ventasDiarias")) || []; // Historial permanente
 
-let acumuladoCartones = 0;
-let acumuladoVentas = 0;
+let grafico;
+let tamanoSeleccionadoRapido = 'super';
 
-// --- 1. Cargar precios desde LocalStorage o usar valores por defecto ---
-let precios = JSON.parse(localStorage.getItem("precios")) || {
-  chico: 3500,
-  mediano: 4500,
-  grande: 5500,
-  jumbo: 6500
-};
-
-// Botón configuración
-const boton = document.getElementById("mostrarConfig");
-const menu = document.getElementById("configuracion");
-boton.addEventListener("click", () => {
-  menu.style.display = (menu.style.display === "none") ? "block" : "none";
-  boton.textContent = (menu.style.display === "block") ? "Ocultar Configuración" : "Configuración";
-});
-
-// Mostrar valores en el formulario de configuración
-document.getElementById("precioChico").value = precios.chico;
-document.getElementById("precioMediano").value = precios.mediano;
-document.getElementById("precioGrande").value = precios.grande;
-document.getElementById("precioJumbo").value = precios.jumbo;
-
-// --- 2. Guardar cambios de configuración ---
-configForm.addEventListener("submit", function(e) {
-  e.preventDefault();
-  precios.chico = parseInt(document.getElementById("precioChico").value);
-  precios.mediano = parseInt(document.getElementById("precioMediano").value);
-  precios.grande = parseInt(document.getElementById("precioGrande").value);
-  precios.jumbo = parseInt(document.getElementById("precioJumbo").value);
-  localStorage.setItem("precios", JSON.stringify(precios));
-  alert("Configuración guardada correctamente ✅");
-});
-
-// --- 3. Cargar ventas del día ---
-let ventas = JSON.parse(localStorage.getItem("ventas")) || [];
-ventas.forEach(v => agregarFilaVentas(v.tamano, v.cantidad, v.subtotal));
-
-// Función para agregar fila a tabla de ventas
-function agregarFilaVentas(tamano, cantidad, subtotal) {
-  const fila = document.createElement('tr');
-  fila.innerHTML = `
-    <td>${tamano}</td>
-    <td>${cantidad}</td>
-    <td>$${subtotal}</td>
-    <td><button class="eliminar" style="background-color:#e63946;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;">🗑️ Eliminar</button></td>
-  `;
-  tablaVentasBody.appendChild(fila);
-
-  acumuladoCartones += cantidad;
-  acumuladoVentas += subtotal;
-
-  totalCartones.textContent = acumuladoCartones;
-  totalVentas.textContent = `$${acumuladoVentas}`;
-}
-
-// --- Registrar nueva venta ---
-form.addEventListener('submit', function(event) {
-  event.preventDefault();
-
-  const tamanoSeleccionado = document.querySelector('input[name="tamano"]:checked');
-  const cantidad = parseInt(document.getElementById('cantidad').value);
-
-  if (!tamanoSeleccionado || cantidad <= 0) return;
-
-  const tamano = tamanoSeleccionado.value.toLowerCase();
-  const precioUnitario = precios[tamano];
-  const subtotal = precioUnitario * cantidad;
-
-  // Guardar en ventas del día
-  const venta = { tamano, cantidad, subtotal };
-  ventas.push(venta);
-  localStorage.setItem("ventas", JSON.stringify(ventas));
-
-  agregarFilaVentas(tamano, cantidad, subtotal);
-  registrarVentaHistorial(tamano, cantidad, precioUnitario);
-
-  form.reset();
-});
-
-// --- Eliminar ventas ---
-tablaVentasBody.addEventListener('click', function(event) {
-  if (event.target.classList.contains('eliminar')) {
-    const fila = event.target.closest('tr');
-    const tamano = fila.children[0].textContent.toLowerCase();
-    const cantidad = parseInt(fila.children[1].textContent);
-    const subtotal = parseInt(fila.children[2].textContent.replace('$',''));
-
-    acumuladoCartones -= cantidad;
-    acumuladoVentas -= subtotal;
-
-    totalCartones.textContent = acumuladoCartones;
-    totalVentas.textContent = `$${acumuladoVentas}`;
-
-    // Actualizar ventas del día
-    ventas = ventas.filter(v => !(v.tamano === tamano && v.cantidad === cantidad && v.subtotal === subtotal));
-    localStorage.setItem("ventas", JSON.stringify(ventas));
-
-    fila.remove();
-  }
-});
-
-// --- 4. Historial de ventas diarias ---
-const historialVentas = JSON.parse(localStorage.getItem("ventasDiarias")) || [];
+// Referencias al DOM
+const tablaVentasBody = document.querySelector('#tablaVentas tbody');
 const tablaHistorialBody = document.querySelector("#historialVentas tbody");
 
-// Mostrar historial guardado al iniciar
-historialVentas.forEach(v => agregarFilaHistorial(v));
+// ==========================================
+// 2. FUNCIONES DE INTERFAZ (RENDER)
+// ==========================================
 
-function registrarVentaHistorial(tamano, cantidad, precioUnitario) {
-  const venta = {
-    fecha: new Date().toLocaleDateString(),
-    tamaño: tamano,
-    cantidad: cantidad,
-    total: cantidad * precioUnitario
-  };
+function renderTodo() {
+    // Actualizar Panel de Stock
+    document.getElementById('st-super').textContent = stock.super;
+    document.getElementById('st-mediano').textContent = stock.mediano;
+    document.getElementById('st-grande').textContent = stock.grande;
+    document.getElementById('st-extra').textContent = stock.extra;
 
-  historialVentas.push(venta);
-  localStorage.setItem("ventasDiarias", JSON.stringify(historialVentas));
-  agregarFilaHistorial(venta);
+    // Renderizar Tabla de Ventas del Día
+    tablaVentasBody.innerHTML = "";
+    let acumCant = 0;
+    let acumPesos = 0;
+
+    ventas.forEach((v, index) => {
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+            <td>${v.tamano.toUpperCase()}</td>
+            <td>${v.cantidad}</td>
+            <td>$${v.subtotal}</td>
+            <td><button onclick="eliminarVenta(${index})" style="background:#e63946; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer;">🗑️</button></td>
+        `;
+        tablaVentasBody.appendChild(fila);
+        acumCant += v.cantidad;
+        acumPesos += v.subtotal;
+    });
+
+    document.getElementById('total').textContent = acumCant;
+    document.getElementById('totalVentas').textContent = `$${acumPesos}`;
+
+    // Renderizar Historial (últimas 10) y Gráfico
+    renderHistorial();
+    actualizarGrafico();
 }
 
-function agregarFilaHistorial(venta) {
-  const fila = document.createElement("tr");
-  fila.innerHTML = `
-    <td>${venta.fecha}</td>
-    <td>${venta.tamaño}</td>
-    <td>${venta.cantidad}</td>
-    <td>$${venta.total}</td>
-  `;
-  tablaHistorialBody.appendChild(fila);
+function renderHistorial() {
+    tablaHistorialBody.innerHTML = "";
+    // Solo las últimas 10 ventas, con la más reciente arriba
+    const ultimasDiez = ventasDiarias.slice(-10).reverse(); 
+
+    ultimasDiez.forEach(v => {
+        const fila = document.createElement("tr");
+        if (v.eliminado) {
+            fila.classList.add('fila-eliminada'); // Asegúrate de tener esta clase en tu CSS
+        }
+
+        fila.innerHTML = `
+            <td>${v.fecha}</td>
+            <td>${v.tamaño.toUpperCase()} ${v.eliminado ? '(ELIMINADO)' : ''}</td>
+            <td>${v.cantidad}</td>
+            <td>$${v.total}</td>
+        `;
+        tablaHistorialBody.appendChild(fila);
+    });
 }
 
-// --- 5. Filtro por tamaño ---
-filtroSelect.addEventListener("change", () => {
-  const tamano = filtroSelect.value;
-  tablaVentasBody.innerHTML = "";
-  acumuladoCartones = 0;
-  acumuladoVentas = 0;
+// ==========================================
+// 3. LÓGICA DE NEGOCIO Y OPERACIONES
+// ==========================================
 
-  let filtradas = ventas;
-  if (tamano !== "todos") {
-    filtradas = ventas.filter(v => v.tamano === tamano.toLowerCase());
-  }
-  filtradas.forEach(v => agregarFilaVentas(v.tamano, v.cantidad, v.subtotal));
+function seleccionarTamano(tamano, elemento) {
+    tamanoSeleccionadoRapido = tamano;
+    document.querySelectorAll('.btn-cat').forEach(btn => btn.classList.remove('active'));
+    elemento.classList.add('active');
+}
+
+function ventaRapida(cant) {
+    const tamano = tamanoSeleccionadoRapido;
+    
+    if (stock[tamano] < cant) {
+        alert("¡No hay suficiente stock! 🥚");
+        return;
+    }
+
+    const subtotal = precios[tamano] * cant;
+    const nuevaVenta = { tamano, cantidad: cant, subtotal };
+    
+    stock[tamano] -= cant;
+    ventas.push(nuevaVenta);
+    
+    // Registro permanente
+    ventasDiarias.push({
+        fecha: new Date().toLocaleString(),
+        tamaño: tamano,
+        cantidad: cant,
+        total: subtotal,
+        eliminado: false
+    });
+
+    guardarYRefrescar();
+}
+
+function eliminarVenta(index) {
+    const v = ventas[index];
+    
+    // Devolver Stock
+    stock[v.tamano] += v.cantidad; 
+
+    // Registrar eliminación en el historial permanente (en rojo/negativo)
+    ventasDiarias.push({
+        fecha: new Date().toLocaleString(),
+        tamaño: v.tamano,
+        cantidad: -v.cantidad,
+        total: -v.subtotal,
+        eliminado: true
+    });
+
+    // Quitar de la lista del día
+    ventas.splice(index, 1);
+    guardarYRefrescar();
+}
+
+function cerrarCaja() {
+    if (confirm("¿Cerrar caja hoy? Se vaciará la tabla del día y el gráfico, pero el historial se mantiene.")) {
+        ventas = [];
+        localStorage.setItem("ventas", JSON.stringify(ventas));
+        renderTodo();
+        alert("Caja diaria reseteada. ✅");
+    }
+}
+
+function guardarYRefrescar() {
+    localStorage.setItem("ventas", JSON.stringify(ventas));
+    localStorage.setItem("stock", JSON.stringify(stock));
+    localStorage.setItem("ventasDiarias", JSON.stringify(ventasDiarias));
+    localStorage.setItem("precios", JSON.stringify(precios));
+    renderTodo();
+}
+
+// ==========================================
+// 4. GRÁFICOS Y EVENTOS
+// ==========================================
+
+function actualizarGrafico() {
+    const ctx = document.getElementById('graficoVentas').getContext('2d');
+    const conteo = { super: 0, mediano: 0, grande: 0, extra: 0 };
+    ventas.forEach(v => conteo[v.tamano] += v.cantidad);
+
+    if (grafico) grafico.destroy();
+    grafico = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Super', 'Mediano', 'Grande', 'Extra'],
+            datasets: [{
+                label: 'Cartones Vendidos Hoy',
+                data: [conteo.super, conteo.mediano, conteo.grande, conteo.extra],
+                backgroundColor: ['#f4a261', '#e76f51', '#2a9d8f', '#264653']
+            }]
+        },
+        options: { responsive: true }
+    });
+}
+
+// Eventos de botones y formularios
+document.getElementById('btnCierreCaja').addEventListener('click', cerrarCaja);
+
+document.getElementById('mostrarConfig').addEventListener('click', () => {
+    const menuConfig = document.getElementById('configuracion');
+    menuConfig.style.display = menuConfig.style.display === 'none' ? 'block' : 'none';
 });
 
-// Botón de descarga
-const btnDescargar = document.getElementById("descargarExcel");
-
-btnDescargar.addEventListener("click", () => {
-  // Obtener historial desde LocalStorage
-  const historialVentas = JSON.parse(localStorage.getItem("ventasDiarias")) || [];
-
-  if (historialVentas.length === 0) {
-    alert("No hay ventas registradas en el historial 📉");
-    return;
-  }
-
-  // Convertir a hoja de Excel
-  const hoja = XLSX.utils.json_to_sheet(historialVentas);
-
-  // Crear libro y añadir hoja
-  const libro = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(libro, hoja, "Historial Ventas");
-
-  // Descargar archivo
-  XLSX.writeFile(libro, "Historial_Ventas.xlsx");
+document.getElementById('configMenu').addEventListener('submit', (e) => {
+    e.preventDefault();
+    precios.super = parseInt(document.getElementById('precioSuper').value) || precios.super;
+    stock.super = parseInt(document.getElementById('inputStSuper').value) || stock.super;
+    precios.mediano = parseInt(document.getElementById('precioMediano').value) || precios.mediano;
+    stock.mediano = parseInt(document.getElementById('inputStMediano').value) || stock.mediano;
+    precios.grande = parseInt(document.getElementById('precioGrande').value) || precios.grande;
+    stock.grande = parseInt(document.getElementById('inputStGrande').value) || stock.grande;
+    precios.extra = parseInt(document.getElementById('precioExtra').value) || precios.extra;
+    stock.extra = parseInt(document.getElementById('inputStExtra').value) || stock.extra;
+    
+    guardarYRefrescar();
+    alert("Datos actualizados correctamente ✅");
 });
 
+document.getElementById("descargarExcel").addEventListener("click", () => {
+    if (ventasDiarias.length === 0) {
+        alert("No hay ventas en el historial 📉");
+        return;
+    }
+    const hoja = XLSX.utils.json_to_sheet(ventasDiarias);
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, "Historial Completo");
+    XLSX.writeFile(libro, "Historial_Huevos_Flor.xlsx");
+});
+
+// Inicio de la aplicación
+renderTodo();
